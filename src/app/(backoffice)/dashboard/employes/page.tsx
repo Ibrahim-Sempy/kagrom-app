@@ -8,7 +8,7 @@ import { Role } from "@prisma/client";
 
 export default async function EmployeesPage() {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.HR]);
-  const employees = await prisma.employee.findMany({ orderBy: { createdAt: "desc" } });
+  const employees = await prisma.employee.findMany({ orderBy: { createdAt: "desc" }, include: { availability: true } });
 
   return (
     <div className="space-y-6">
@@ -36,7 +36,7 @@ export default async function EmployeesPage() {
               employee.phone,
               employee.address || "-",
               employee.competency,
-              employee.availability || "-",
+              employee.availability?.label || "-",
               employee.status,
               <EmployeeActions key="actions" employee={serializeData(employee)} />,
             ])}

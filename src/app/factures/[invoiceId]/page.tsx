@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/utils";
+import { PrintDownloadButtons } from "@/components/PrintDownloadButtons";
 
 export default async function InvoicePrintPage({
   params,
@@ -17,7 +18,7 @@ export default async function InvoicePrintPage({
       enrollment: {
         include: {
           learner: true,
-          trainingModule: true,
+          enrollmentModules: { include: { trainingModule: true } },
         }
       },
       mission: true,
@@ -34,8 +35,9 @@ export default async function InvoicePrintPage({
   const due = amount - paid;
 
   return (
-    <main className="min-h-screen bg-[#f1ead8] p-6 print:bg-white print:p-0">
-      <div className="mx-auto max-w-3xl rounded-[36px] border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_80px_rgba(34,48,38,0.12)] print:shadow-none print:border-none print:rounded-none">
+    <main className="min-h-screen bg-[#f1ead8] p-6 print:bg-white print:p-0 flex flex-col items-center">
+      <PrintDownloadButtons filename={`Facture_KAGROM_${invoice.invoiceNo}.pdf`} />
+      <div className="mt-8 mx-auto w-full max-w-3xl rounded-[36px] border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_80px_rgba(34,48,38,0.12)] print:shadow-none print:border-none print:rounded-none print:mt-0">
         
         {/* Header */}
         <div className="flex justify-between items-start">

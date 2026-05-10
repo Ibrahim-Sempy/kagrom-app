@@ -12,12 +12,12 @@ export default async function PaymentsPage() {
   const [enrollments, installments, payments] = await Promise.all([
     prisma.enrollment.findMany({
       orderBy: { registrationDate: "desc" },
-      include: { learner: true, trainingModule: true },
+      include: { learner: true, enrollmentModules: { include: { trainingModule: true } } },
     }),
     prisma.paymentInstallment.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.payment.findMany({
       orderBy: { paidAt: "desc" },
-      include: { enrollment: { include: { learner: true, trainingModule: true } }, installment: true, receipt: true },
+      include: { enrollment: { include: { learner: true, enrollmentModules: { include: { trainingModule: true } } } }, installment: true, receipt: true },
     }),
   ]);
 

@@ -118,60 +118,111 @@ export async function createTrainingSessionAction(formData: FormData) {
 }
 
 export async function createEnrollmentAction(formData: FormData) {
-  await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
+  const session = await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
   const photoUrl = await saveUploadedImage(formData.get("photo") as File | null);
 
   const registrationFee = getNumber(formData, "registrationFee");
   const trainingFee = getNumber(formData, "trainingFee");
   const totalFee = registrationFee + trainingFee;
+  const amountPaid = getNumber(formData, "amountPaid");
+  const amountDue = Math.max(totalFee - amountPaid, 0);
+  const paymentStatus = amountDue <= 0 ? PaymentStatus.PAID : amountPaid > 0 ? PaymentStatus.PARTIAL : PaymentStatus.UNPAID;
 
-  const learner = await prisma.learner.create({
-    data: {
-      registrationNo: nextCode("APP-KAG"),
-      firstName: getString(formData, "firstName"),
-      lastName: getString(formData, "lastName"),
-      phone: getString(formData, "phone"),
-      email: getString(formData, "email") || null,
-      gender: getString(formData, "gender") || null,
-      address: getString(formData, "address") || null,
-      birthDate: getOptionalDate(formData, "birthDate"),
-      birthPlace: getString(formData, "birthPlace") || null,
-      occupation: getString(formData, "occupation") || null,
-      emergencyContactFirstName: getString(formData, "emergencyContactFirstName") || null,
-      emergencyContactLastName: getString(formData, "emergencyContactLastName") || null,
-      emergencyPhone: getString(formData, "emergencyPhone") || null,
-      photoUrl,
-    },
-  });
+  const moduleIds = formData.getAll("trainingModuleIds").map(String).filter(Boolean);
+  const matricule = getString(formData, "matricule") || nextCode("MAT");
 
-  await prisma.enrollment.create({
-    data: {
-      learnerId: learner.id,
-      trainingSessionId: getString(formData, "trainingSessionId"),
-      matricule: getString(formData, "matricule") || nextCode("MAT"),
-      registrationDate: getDate(formData, "registrationDate"),
-      operatorTypeId: getString(formData, "operatorTypeId") || null,
-      trainingModuleId: getString(formData, "trainingModuleId") || null,
-      trainingLocationId: getString(formData, "trainingLocationId") || null,
-      durationOptionId: getString(formData, "durationOptionId") || null,
-      paymentModeOptionId: getString(formData, "paymentModeOptionId") || null,
-      registrationFee,
-      trainingFee,
-      totalFee,
-      amountPaid: 0,
-      amountDue: totalFee,
-      paymentStatus: PaymentStatus.UNPAID,
-      status: "IN_PROGRESS",
-    },
+  await prisma.$transaction(async (tx) => {
+    const learner = await tx.learner.create({
+      data: {
+        registrationNo: nextCode("APP-KAG"),
+        firstName: getString(formData, "firstName"),
+        lastName: getString(formData, "lastName"),
+        phone: getString(formData, "phone"),
+        email: getString(formData, "email") || null,
+        gender: getString(formData, "gender") || null,
+        address: getString(formData, "address") || null,
+        birthDate: getOptionalDate(formData, "birthDate"),
+        birthPlace: getString(formData, "birthPlace") || null,
+        occupation: getString(formData, "occupation") || null,
+        emergencyContactFirstName: getString(formData, "emergencyContactFirstName") || null,
+        emergencyContactLastName: getString(formData, "emergencyContactLastName") || null,
+        emergencyPhone: getString(formData, "emergencyPhone") || null,
+        photoUrl,
+      },
+    });
+
+    const enrollment = await tx.enrollment.create({
+      data: {
+        learnerId: learner.id,
+        trainingSessionId: getString(formData, "trainingSessionId"),
+        matricule,
+        registrationDate: getDate(formData, "registrationDate"),
+        operatorTypeId: getString(formData, "operatorTypeId") || null,
+        trainingLocationId: getString(formData, "trainingLocationId") || null,
+        durationOptionId: getString(formData, "durationOptionId") || null,
+        paymentModeOptionId: getString(formData, "paymentModeOptionId") || null,
+        registrationFee,
+        trainingFee,
+        totalFee,
+        amountPaid,
+        amountDue,
+        paymentStatus,
+        status: "IN_PROGRESS",
+        enrollmentModules: {
+          create: moduleIds.map((id) => ({
+            trainingModuleId: id,
+          })),
+        },
+      },
+    });
+
+    if (amountPaid > 0) {
+      const payment = await tx.payment.create({
+        data: {
+          paymentNo: nextCode("PAY-KAG"),
+          enrollmentId: enrollment.id,
+          amount: amountPaid,
+          paidAt: getDate(formData, "registrationDate") || new Date(),
+          method: (getString(formData, "paymentMethod") as PaymentMethod) || PaymentMethod.CASH,
+          recordedById: session.userId,
+        },
+      });
+
+      await tx.receipt.create({
+        data: {
+          receiptNo: nextCode("REC-KAG"),
+          paymentId: payment.id,
+        },
+      });
+
+      const lastCashEntry = await tx.cashEntry.findFirst({ orderBy: { createdAt: "desc" } });
+      const previousBalance = lastCashEntry ? Number(lastCashEntry.balanceAfter) : 0;
+
+      await tx.cashEntry.create({
+        data: {
+          entryNo: nextCode("CAISSE"),
+          date: getDate(formData, "registrationDate") || new Date(),
+          label: `Paiement initial inscription ${matricule}`,
+          type: CashType.INCOME,
+          amount: amountPaid,
+          balanceAfter: previousBalance + amountPaid,
+          justification: "Paiement lors de l'inscription",
+          paymentId: payment.id,
+        },
+      });
+    }
   });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/inscriptions");
   revalidatePath("/dashboard/apprenants");
+  revalidatePath("/dashboard/paiements");
+  revalidatePath("/dashboard/gestion-caisse");
 }
 
 export async function enrollLearnerAction(formData: FormData) {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
+  const moduleIds = formData.getAll("trainingModuleIds").map(String).filter(Boolean);
 
   await prisma.enrollment.create({
     data: {
@@ -180,6 +231,11 @@ export async function enrollLearnerAction(formData: FormData) {
       matricule: nextCode("MAT"),
       registrationDate: new Date(),
       status: "IN_PROGRESS",
+      enrollmentModules: {
+        create: moduleIds.map((id) => ({
+          trainingModuleId: id,
+        })),
+      },
     },
   });
 
@@ -189,14 +245,14 @@ export async function enrollLearnerAction(formData: FormData) {
 
 export async function recordResultAction(formData: FormData) {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
-  const enrollmentId = getString(formData, "enrollmentId");
+  const enrollmentModuleId = getString(formData, "enrollmentModuleId");
   const theory = getNumber(formData, "scoreTheory");
   const practical = getNumber(formData, "scorePractical");
   const average = parseAverage(theory, practical);
   const passed = average >= 12;
 
-  const enrollment = await prisma.enrollment.update({
-    where: { id: enrollmentId },
+  const em = await prisma.enrollmentModule.update({
+    where: { id: enrollmentModuleId },
     data: {
       scoreTheory: theory,
       scorePractical: practical,
@@ -205,16 +261,33 @@ export async function recordResultAction(formData: FormData) {
       resultLabel: passed ? "Valide" : "Non valide",
       status: passed ? "PASSED" : "FAILED",
     },
-    include: { certificate: true },
+    include: { enrollment: { include: { enrollmentModules: true, certificate: true } } },
   });
 
-  if (passed && !enrollment.certificate) {
+  const enrollment = em.enrollment;
+  const allModulesPassed = enrollment.enrollmentModules.length > 0 && enrollment.enrollmentModules.every(m => m.status === "PASSED");
+
+  if (allModulesPassed && !enrollment.certificate) {
     await prisma.certificate.create({
       data: {
         enrollmentId: enrollment.id,
         certificateNo: nextCode("CERT-KAG"),
         verificationCode: nextCode("VERIFY-KAG"),
       },
+    });
+    await prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: "PASSED" },
+    });
+  } else if (!allModulesPassed && enrollment.certificate) {
+    await prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: "IN_PROGRESS" },
+    });
+  } else if (allModulesPassed) {
+    await prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: "PASSED" },
     });
   }
 
@@ -536,7 +609,7 @@ export async function createEmployeeAction(formData: FormData) {
       phone: getString(formData, "phone"),
       address: getString(formData, "address") || null,
       competency: getString(formData, "competency"),
-      availability: getString(formData, "availability") || null,
+      availabilityId: getString(formData, "availabilityId") || null,
     },
   });
 
@@ -735,23 +808,44 @@ export async function updateEnrollmentAction(id: string, formData: FormData) {
   const registrationFee = getNumber(formData, "registrationFee");
   const trainingFee = getNumber(formData, "trainingFee");
   const totalFee = registrationFee + trainingFee;
+  const moduleIds = formData.getAll("trainingModuleIds").map(String).filter(Boolean);
 
-  await prisma.enrollment.update({
-    where: { id },
-    data: {
-      trainingSessionId: getString(formData, "trainingSessionId"),
-      matricule: getString(formData, "matricule") || undefined,
-      registrationDate: getDate(formData, "registrationDate"),
-      operatorTypeId: getString(formData, "operatorTypeId") || null,
-      trainingModuleId: getString(formData, "trainingModuleId") || null,
-      trainingLocationId: getString(formData, "trainingLocationId") || null,
-      durationOptionId: getString(formData, "durationOptionId") || null,
-      paymentModeOptionId: getString(formData, "paymentModeOptionId") || null,
-      registrationFee,
-      trainingFee,
-      totalFee,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.enrollment.update({
+      where: { id },
+      data: {
+        trainingSessionId: getString(formData, "trainingSessionId"),
+        matricule: getString(formData, "matricule") || undefined,
+        registrationDate: getDate(formData, "registrationDate"),
+        operatorTypeId: getString(formData, "operatorTypeId") || null,
+        trainingLocationId: getString(formData, "trainingLocationId") || null,
+        durationOptionId: getString(formData, "durationOptionId") || null,
+        paymentModeOptionId: getString(formData, "paymentModeOptionId") || null,
+        registrationFee,
+        trainingFee,
+        totalFee,
+      },
+    });
+
+    await tx.enrollmentModule.deleteMany({
+      where: {
+        enrollmentId: id,
+        trainingModuleId: { notIn: moduleIds },
+      },
+    });
+
+    for (const modId of moduleIds) {
+      const exists = await tx.enrollmentModule.findUnique({
+        where: { enrollmentId_trainingModuleId: { enrollmentId: id, trainingModuleId: modId } },
+      });
+      if (!exists) {
+        await tx.enrollmentModule.create({
+          data: { enrollmentId: id, trainingModuleId: modId },
+        });
+      }
+    }
   });
+
   revalidatePath("/dashboard/inscriptions");
 }
 
@@ -788,7 +882,7 @@ export async function updateEmployeeAction(id: string, formData: FormData) {
       phone: getString(formData, "phone"),
       address: getString(formData, "address") || null,
       competency: getString(formData, "competency"),
-      availability: getString(formData, "availability") || null,
+      availabilityId: getString(formData, "availabilityId") || null,
     },
   });
   revalidatePath("/dashboard/employes");
@@ -818,7 +912,7 @@ export async function createEnrollmentInvoiceAction(enrollmentId: string) {
   
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { learner: true, trainingModule: true }
+    include: { learner: true, enrollmentModules: { include: { trainingModule: true } } }
   });
 
   if (!enrollment) throw new Error("Inscription introuvable");
@@ -833,7 +927,7 @@ export async function createEnrollmentInvoiceAction(enrollmentId: string) {
   const invoiceNo = `FAC-${stamp}`;
   
   const clientName = `${enrollment.learner.firstName} ${enrollment.learner.lastName}`;
-  const description = `Frais de formation - ${enrollment.trainingModule?.name || "Général"}`;
+  const description = `Frais de formation - ${enrollment.enrollmentModules[0]?.trainingModule?.name || "Général"}`;
   
   const newInvoice = await prisma.invoice.create({
     data: {

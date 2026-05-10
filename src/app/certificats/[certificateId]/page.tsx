@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate } from "@/lib/utils";
+import { PrintDownloadButtons } from "@/components/PrintDownloadButtons";
 
 export default async function CertificatePrintPage({
   params,
@@ -25,6 +26,7 @@ export default async function CertificatePrintPage({
           operatorType: true,
           durationOption: true,
           trainingLocation: true,
+          enrollmentModules: true,
         },
       },
     },
@@ -43,17 +45,21 @@ export default async function CertificatePrintPage({
   const duration = certificate.enrollment.durationOption?.label || `${training.durationDays} Jours`;
   const location = certificate.enrollment.trainingLocation?.name || session.location || "Conakry/Boké";
   
-  const formattedScore = decimalToNumber(certificate.enrollment.averageScore);
+  const modules = certificate.enrollment.enrollmentModules || [];
+  const totalScore = modules.reduce((sum, m) => sum + (m.averageScore ? Number(m.averageScore) : 0), 0);
+  const formattedScore = modules.length > 0 ? totalScore / modules.length : 12;
   let mention = "PASSABLE";
   if (formattedScore >= 16) mention = "TRÈS BIEN";
   else if (formattedScore >= 14) mention = "BIEN";
   else if (formattedScore >= 12) mention = "ASSEZ BIEN";
 
-  const dob = learner.birthDate ? formatDate(learner.birthDate).split(' ')[0] : "............";
+  const dob = learner.birthDate ? formatDate(learner.birthDate) : "............";
   const pob = learner.birthPlace ? learner.birthPlace : "............";
 
   return (
-    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex items-center justify-center">
+    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex flex-col items-center justify-center">
+      <PrintDownloadButtons filename={`Certificat_KAGROM_${certificate.certificateNo}.pdf`} />
+      
       {/* Certificate Container: Standard A4 Landscape */}
       <div className="relative mx-auto w-[297mm] h-[210mm] bg-[#FCFAF5] overflow-hidden shadow-2xl print:shadow-none bg-white font-display text-[#112240]">
         

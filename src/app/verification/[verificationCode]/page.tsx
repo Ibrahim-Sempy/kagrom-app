@@ -19,6 +19,7 @@ export default async function VerificationPage({
           trainingSession: {
             include: { training: true },
           },
+          enrollmentModules: true,
         },
       },
     },
@@ -28,12 +29,16 @@ export default async function VerificationPage({
     notFound();
   }
 
+  const modules = certificate.enrollment.enrollmentModules || [];
+  const totalScore = modules.reduce((sum, m) => sum + (m.averageScore ? Number(m.averageScore) : 0), 0);
+  const formattedScore = modules.length > 0 ? totalScore / modules.length : 12;
+
   return (
     <main className="min-h-screen bg-[color:var(--surface-2)] px-4 py-10">
-      <div className="mx-auto max-w-4xl rounded-[40px] border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_70px_rgba(56,91,42,0.08)]">
+      <div className="mx-auto max-w-4xl rounded-md border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_70px_rgba(56,91,42,0.08)]">
         <Brand />
-        <div className="mt-10 rounded-[32px] bg-[linear-gradient(140deg,rgba(79,127,61,0.96),rgba(57,91,44,0.96))] p-8 text-white">
-          <p className="text-xs uppercase tracking-[0.24em] text-white/70">Verification du certificat</p>
+        <div className="mt-10 rounded-md bg-[linear-gradient(140deg,rgba(79,127,61,0.96),rgba(57,91,44,0.96))] p-8 text-white">
+          <p className="text-xs uppercase tracking-[0.24em] text-white/70">Vérification du certificat</p>
           <h1 className="mt-3 font-display text-4xl font-bold">Certificat authentique</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80">
             Ce certificat est reconnu dans la base KAGROM SARLU et correspond a un apprenant ayant valide sa formation.
@@ -41,31 +46,31 @@ export default async function VerificationPage({
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
-            <p className="text-sm text-[color:var(--foreground-muted)]">Numero de certificat</p>
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+            <p className="text-sm text-[color:var(--foreground-muted)]">Numéro de certificat</p>
             <p className="mt-2 text-xl font-semibold">{certificate.certificateNo}</p>
           </div>
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
-            <p className="text-sm text-[color:var(--foreground-muted)]">Date d'emission</p>
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+            <p className="text-sm text-[color:var(--foreground-muted)]">Date d'émission</p>
             <p className="mt-2 text-xl font-semibold">{formatDate(certificate.issuedAt)}</p>
           </div>
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Apprenant</p>
             <p className="mt-2 text-xl font-semibold">
               {certificate.enrollment.learner.firstName} {certificate.enrollment.learner.lastName}
             </p>
           </div>
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Formation</p>
             <p className="mt-2 text-xl font-semibold">{certificate.enrollment.trainingSession.training.title}</p>
           </div>
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Session</p>
             <p className="mt-2 text-xl font-semibold">{certificate.enrollment.trainingSession.name}</p>
           </div>
-          <div className="rounded-[28px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
-            <p className="text-sm text-[color:var(--foreground-muted)]">Resultat</p>
-            <p className="mt-2 text-xl font-semibold">{decimalToNumber(certificate.enrollment.averageScore).toFixed(2)} / 20</p>
+          <div className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-5">
+            <p className="text-sm text-[color:var(--foreground-muted)]">Résultat</p>
+            <p className="mt-2 text-xl font-semibold">{formattedScore.toFixed(2)} / 20</p>
           </div>
         </div>
       </div>

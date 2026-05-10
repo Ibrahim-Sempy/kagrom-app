@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { PrintDownloadButtons } from "@/components/PrintDownloadButtons";
 
 export default async function BadgePrintPage({
   params,
@@ -29,7 +30,9 @@ export default async function BadgePrintPage({
   const fullName = `${enrollment.learner.firstName} ${enrollment.learner.lastName}`;
 
   return (
-    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex items-center justify-center">
+    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex flex-col items-center justify-center">
+      <PrintDownloadButtons filename={`Badge_KAGROM_${enrollment.matricule}.pdf`} />
+      
       {/* Badge Container: vertical ID card format (approx. CR80 size scaled up slightly for readability) */}
       <div className="relative mx-auto w-[380px] h-[600px] overflow-hidden bg-[#f5f3ec] print:shadow-none shadow-[0_20px_60px_rgba(34,48,38,0.18)] font-sans">
         
@@ -52,14 +55,14 @@ export default async function BadgePrintPage({
         
         {/* Main Green background block */}
         <div className="absolute top-[190px] left-[-50px] w-[500px] h-[300px] bg-[#4f7f3d] rounded-[30%] transform -rotate-3 z-0"></div>
-        <div className="absolute top-[280px] left-0 w-full h-[150px] bg-[#4f7f3d] z-0"></div>
+        <div className="absolute top-[280px] left-0 w-full h-[180px] bg-[#4f7f3d] z-0"></div>
         
         {/* White thin separator lines to emulate image design */}
         <div className="absolute top-[215px] left-[-50px] w-[500px] h-[8px] bg-white opacity-80 transform -rotate-3 z-0 rounded-[50%]"></div>
         <div className="absolute top-[320px] left-[-50px] w-[500px] h-[6px] bg-white opacity-80 transform -rotate-1 z-0 rounded-[50%]"></div>
 
         {/* Bottom Cream section overlaps green smoothly */}
-        <div className="absolute bottom-0 left-0 w-full h-[220px] bg-[#f5f3ec] z-0"></div>
+        <div className="absolute bottom-0 left-0 w-full h-[160px] bg-[#f5f3ec] z-0"></div>
         
         {/* Content Overlays */}
         
@@ -76,26 +79,41 @@ export default async function BadgePrintPage({
 
         {/* Name block on green */}
         <div className="absolute top-[355px] w-full text-center z-10 px-4">
-          <h2 className="text-[34px] font-bold text-white leading-tight drop-shadow-md">
-            {enrollment.learner.firstName} <span className="uppercase">{enrollment.learner.lastName}</span>
+          <h2 className="text-[34px] font-bold text-[#fcefb4] leading-tight drop-shadow-md">
+            {enrollment.learner.firstName} <span className="uppercase text-[#c8872a]">{enrollment.learner.lastName}</span>
           </h2>
-          <p className="text-[26px] font-bold text-white mt-1 drop-shadow-sm">
+          <p className="text-[24px] font-medium text-white/90 mt-1 drop-shadow-sm">
             {enrollment.operatorType?.name || "Opérateur"}
           </p>
         </div>
 
         {/* Info list on cream */}
-        <div className="absolute bottom-[20px] w-full px-8 z-10 text-[#d08a2e] font-bold">
-          <div className="text-[22px] space-y-[6px]">
-            <p>Type : {enrollment.trainingSession.training.title}</p>
-            <p>Matricule : {enrollment.matricule}</p>
-            <p>Session : {enrollment.trainingSession.sessionNumber}</p>
+        <div className="absolute bottom-[20px] w-full px-8 z-10 font-bold">
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-[14px] uppercase tracking-widest text-[#4f7f3d]/80 mb-0.5">Formation</p>
+              <p className="text-[20px] text-[#c8872a] leading-tight">{enrollment.trainingSession.training.title}</p>
+            </div>
+            
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[14px] uppercase tracking-widest text-[#4f7f3d]/80 mb-0.5">Matricule</p>
+                <p className="text-[19px] text-[#c8872a] leading-none">{enrollment.matricule}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[14px] uppercase tracking-widest text-[#4f7f3d]/80 mb-0.5">Session</p>
+                <p className="text-[22px] text-[#c8872a] leading-none">{enrollment.trainingSession.sessionNumber}</p>
+              </div>
+            </div>
           </div>
           
           {/* Dashed divider */}
-          <div className="w-full border-t-4 border-dashed border-[#4f7f3d] my-4 opacity-70"></div>
+          <div className="w-full border-t-2 border-dashed border-[#4f7f3d] mt-5 mb-3 opacity-50"></div>
           
-          <p className="text-[22px] text-center">Tel: {enrollment.learner.phone}</p>
+          <div className="flex justify-center items-center gap-2">
+            <span className="text-[14px] uppercase tracking-widest text-[#4f7f3d]/80">Contact :</span>
+            <span className="text-[18px] text-[#c8872a]">{enrollment.learner.phone}</span>
+          </div>
         </div>
 
       </div>

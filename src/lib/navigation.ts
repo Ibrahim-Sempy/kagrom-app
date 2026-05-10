@@ -17,7 +17,13 @@ import {
 } from "lucide-react";
 import { Role } from "@prisma/client";
 
-export const navigationItems = [
+export const navigationItems: {
+  href: string;
+  label: string;
+  icon: any;
+  section: string | null;
+  roles: Role[];
+}[] = [
   {
     href: "/dashboard",
     label: "Tableau de bord",
@@ -48,7 +54,7 @@ export const navigationItems = [
   },
   {
     href: "/dashboard/notes-evaluations",
-    label: "Notes & Evaluations",
+    label: "Notes & Évaluations",
     icon: Star,
     section: "Formation",
     roles: [Role.ADMIN, Role.MANAGER, Role.TRAINER],
@@ -71,28 +77,28 @@ export const navigationItems = [
     href: "/dashboard/services",
     label: "Services",
     icon: BriefcaseBusiness,
-    section: "Services Menagers",
+    section: "Services Ménagers",
     roles: [Role.ADMIN, Role.MANAGER, Role.HR],
   },
   {
     href: "/dashboard/employes",
-    label: "Employes",
+    label: "Employés",
     icon: UserSquare2,
-    section: "Services Menagers",
+    section: "Services Ménagers",
     roles: [Role.ADMIN, Role.MANAGER, Role.HR],
   },
   {
     href: "/dashboard/foyers",
     label: "Foyers",
     icon: House,
-    section: "Services Menagers",
+    section: "Services Ménagers",
     roles: [Role.ADMIN, Role.MANAGER, Role.HR],
   },
   {
     href: "/dashboard/affectations",
-    label: "Employes & Foyers",
+    label: "Employés & Foyers",
     icon: Waypoints,
-    section: "Services Menagers",
+    section: "Services Ménagers",
     roles: [Role.ADMIN, Role.MANAGER, Role.HR],
   },
   {
@@ -111,7 +117,7 @@ export const navigationItems = [
   },
   {
     href: "/dashboard/parametres",
-    label: "Parametres",
+    label: "Paramètres",
     icon: Settings,
     section: "Configuration",
     roles: [Role.ADMIN],

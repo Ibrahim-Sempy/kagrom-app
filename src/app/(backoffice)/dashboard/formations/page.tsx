@@ -25,6 +25,7 @@ export default async function TrainingsPage() {
           include: { training: true },
         },
         certificate: true,
+        enrollmentModules: true,
       },
     }),
     prisma.operatorType.findMany({ orderBy: { name: "asc" } }),
@@ -137,32 +138,9 @@ export default async function TrainingsPage() {
                   {enrollment.trainingSession.name} • {formatDate(enrollment.trainingSession.startDate)}
                 </p>
               </div>,
-              enrollment.averageScore ? decimalToNumber(enrollment.averageScore).toFixed(2) : "-",
+              (enrollment.enrollmentModules || []).length > 0 ? ((enrollment.enrollmentModules || []).reduce((sum, m) => sum + (m.averageScore ? Number(m.averageScore) : 0), 0) / (enrollment.enrollmentModules || []).length).toFixed(2) : "-",
               enrollment.status,
               <div key="actions" className="space-y-3">
-                <form action={recordResultAction} className="grid gap-2 md:grid-cols-2">
-                  <input type="hidden" name="enrollmentId" value={enrollment.id} />
-                  <input
-                    name="scoreTheory"
-                    type="number"
-                    step="0.01"
-                    placeholder="Note theorique"
-                    className="h-10 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
-                  />
-                  <input
-                    name="scorePractical"
-                    type="number"
-                    step="0.01"
-                    placeholder="Note pratique"
-                    className="h-10 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
-                  />
-                  <button
-                    type="submit"
-                    className="md:col-span-2 inline-flex h-10 items-center justify-center rounded-xl bg-[color:var(--brand-green)] px-3 text-xs font-semibold text-white"
-                  >
-                    Valider les resultats
-                  </button>
-                </form>
 
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/badges/${enrollment.id}`} className="rounded-full border border-[color:var(--stroke)] px-3 py-2 text-xs font-semibold">

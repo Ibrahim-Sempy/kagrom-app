@@ -2,6 +2,7 @@ import { createEnrollmentAction } from "@/app/actions";
 import { Field, PageHeader, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { nextCode } from "@/lib/utils";
 import { Role } from "@prisma/client";
 
 export default async function EnrollmentsPage() {
@@ -27,7 +28,7 @@ export default async function EnrollmentsPage() {
       <Panel title="Nouvelle Inscription" description="Informations personnelles, formation, contact d'urgence et frais de formation.">
         <form action={createEnrollmentAction} className="grid gap-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Matricule" name="matricule" defaultValue={`MAT-${new Date().getFullYear()}-001`} required />
+            <Field label="Matricule" name="matricule" defaultValue={nextCode("MAT")} required />
             <SelectField
               label="Session"
               name="trainingSessionId"
@@ -48,7 +49,7 @@ export default async function EnrollmentsPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <SelectField label="Type Operateur" name="operatorTypeId" options={operatorTypes.map((item) => ({ value: item.id, label: item.name }))} />
-            <SelectField label="Module" name="trainingModuleId" options={modules.map((item) => ({ value: item.id, label: item.name }))} />
+            <SelectField label="Module" name="trainingModuleIds" options={modules.map((item) => ({ value: item.id, label: item.name }))} />
             <SelectField label="Lieu de Formation" name="trainingLocationId" options={locations.map((item) => ({ value: item.id, label: item.name }))} />
             <SelectField label="Duree" name="durationOptionId" options={durations.map((item) => ({ value: item.id, label: item.label }))} />
             <Field label="Date d'Inscription" name="registrationDate" type="date" required />

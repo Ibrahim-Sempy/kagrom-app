@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/utils";
+import { PrintDownloadButtons } from "@/components/PrintDownloadButtons";
 
 export default async function ReceiptPrintPage({
   params,
@@ -28,8 +29,9 @@ export default async function ReceiptPrintPage({
   const invoice = receipt.payment.invoice;
 
   return (
-    <main className="min-h-screen bg-[#f1ead8] p-6 print:bg-white">
-      <div className="mx-auto max-w-3xl rounded-[36px] border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_80px_rgba(34,48,38,0.12)] print:shadow-none">
+    <main className="min-h-screen bg-[#f1ead8] p-6 print:bg-white flex flex-col items-center">
+      <PrintDownloadButtons filename={`Recu_KAGROM_${receipt.receiptNo}.pdf`} />
+      <div className="mt-8 mx-auto w-full max-w-3xl rounded-[36px] border border-[color:var(--stroke)] bg-white p-8 shadow-[0_24px_80px_rgba(34,48,38,0.12)] print:shadow-none print:mt-0">
         <Brand compact />
         <div className="mt-8 rounded-[28px] bg-[linear-gradient(145deg,rgba(79,127,61,0.98),rgba(57,91,44,0.98))] px-6 py-6 text-white">
           <p className="text-xs uppercase tracking-[0.24em] text-white/70">Recu de paiement</p>

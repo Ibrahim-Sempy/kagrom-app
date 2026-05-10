@@ -156,11 +156,11 @@ model OperatorType {
 }
 
 model TrainingModule {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  enrollments Enrollment[]
+  id                String             @id @default(cuid())
+  name              String             @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  enrollmentModules EnrollmentModule[]
 }
 
 model TrainingLocation {
@@ -204,7 +204,6 @@ model Enrollment {
   matricule             String             @unique
   registrationDate      DateTime           @default(now())
   operatorTypeId        String?
-  trainingModuleId      String?
   trainingLocationId    String?
   durationOptionId      String?
   paymentModeOptionId   String?
@@ -214,18 +213,12 @@ model Enrollment {
   amountPaid            Decimal            @default(0) @db.Decimal(12, 2)
   amountDue             Decimal            @default(0) @db.Decimal(12, 2)
   paymentStatus         PaymentStatus      @default(UNPAID)
-  scoreTheory           Decimal?           @db.Decimal(5, 2)
-  scorePractical        Decimal?           @db.Decimal(5, 2)
-  averageScore          Decimal?           @db.Decimal(5, 2)
-  observation           String?
-  resultLabel           String?
   status                EnrollmentStatus   @default(PENDING)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   learner               Learner            @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   trainingSession       TrainingSession    @relation(fields: [trainingSessionId], references: [id], onDelete: Cascade)
   operatorType          OperatorType?      @relation(fields: [operatorTypeId], references: [id], onDelete: SetNull)
-  trainingModule        TrainingModule?    @relation(fields: [trainingModuleId], references: [id], onDelete: SetNull)
   trainingLocation      TrainingLocation?  @relation(fields: [trainingLocationId], references: [id], onDelete: SetNull)
   durationOption        DurationOption?    @relation(fields: [durationOptionId], references: [id], onDelete: SetNull)
   paymentModeOption     PaymentModeOption? @relation(fields: [paymentModeOptionId], references: [id], onDelete: SetNull)
@@ -233,6 +226,45 @@ model Enrollment {
   invoices              Invoice[]
   payments              Payment[]
   documents             Document[]
+  enrollmentModules     EnrollmentModule[]
+  notes                 Note[]
+}
+
+model EnrollmentModule {
+  id               String         @id @default(cuid())
+  enrollmentId     String
+  trainingModuleId String
+  scoreTheory      Decimal?       @db.Decimal(5, 2)
+  scorePractical   Decimal?       @db.Decimal(5, 2)
+  averageScore     Decimal?       @db.Decimal(5, 2)
+  observation      String?
+  resultLabel      String?
+  status           EnrollmentStatus @default(PENDING)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  enrollment       Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  trainingModule   TrainingModule @relation(fields: [trainingModuleId], references: [id], onDelete: Restrict)
+
+  @@unique([enrollmentId, trainingModuleId])
+}
+
+model Note {
+  id           String      @id @default(cuid())
+  content      String
+  enrollmentId String?
+  employeeId   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  employee     Employee?   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Availability {
+  id          String     @id @default(cuid())
+  label       String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  employees   Employee[]
 }
 
 model Certificate {
@@ -295,17 +327,19 @@ model Household {
 }
 
 model Employee {
-  id            String         @id @default(cuid())
-  employeeNo    String         @unique
-  fullName      String
-  phone         String
-  address       String?
-  competency    String
-  availability  String?
-  status        EmployeeStatus @default(AVAILABLE)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  assignments   Assignment[]
+  id             String         @id @default(cuid())
+  employeeNo     String         @unique
+  fullName       String
+  phone          String
+  address        String?
+  competency     String
+  availabilityId String?
+  status         EmployeeStatus @default(AVAILABLE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  assignments    Assignment[]
+  notes          Note[]
+  availability   Availability?  @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
 }
 
 model Assignment {
@@ -321,6 +355,7 @@ model Assignment {
   updatedAt    DateTime         @updatedAt
   employee     Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   household    Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
 }
 
 model ServiceMission {
@@ -360,11 +395,13 @@ model Invoice {
   status        InvoiceStatus @default(ISSUED)
   missionId     String?
   enrollmentId  String?
+  assignmentId  String?
   issuedById    String
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   mission       ServiceMission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
   enrollment    Enrollment?   @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  assignment    Assignment?   @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   issuedBy      User          @relation("InvoiceCreatedBy", fields: [issuedById], references: [id], onDelete: Restrict)
   payments      Payment[]
   documents     Document[]

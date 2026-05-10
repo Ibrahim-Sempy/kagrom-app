@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate } from "@/lib/utils";
+import { PrintDownloadButtons } from "@/components/PrintDownloadButtons";
 
 export default async function RelevePrintPage({
   params,
@@ -19,7 +20,7 @@ export default async function RelevePrintPage({
         include: { training: true },
       },
       operatorType: true,
-      trainingModule: true,
+      enrollmentModules: { include: { trainingModule: true } },
     },
   });
 
@@ -35,9 +36,10 @@ export default async function RelevePrintPage({
   const session = enrollment.trainingSession;
   const training = session.training;
   
-  const scoreTheory = decimalToNumber(enrollment.scoreTheory);
-  const scorePractical = decimalToNumber(enrollment.scorePractical);
-  const averageScore = decimalToNumber(enrollment.averageScore);
+  const module = enrollment.enrollmentModules[0];
+  const scoreTheory = decimalToNumber(module?.scoreTheory);
+  const scorePractical = decimalToNumber(module?.scorePractical);
+  const averageScore = decimalToNumber(module?.averageScore);
   
   let mention = "NON VALIDÉ";
   if (averageScore >= 16) mention = "TRÈS BIEN";
@@ -45,12 +47,14 @@ export default async function RelevePrintPage({
   else if (averageScore >= 12) mention = "ASSEZ BIEN";
   else if (averageScore >= 10) mention = "PASSABLE";
 
-  const dob = learner.birthDate ? formatDate(learner.birthDate).split(' ')[0] : "............";
+  const dob = learner.birthDate ? formatDate(learner.birthDate) : "............";
   const pob = learner.birthPlace ? learner.birthPlace : "............";
   const sessionDates = `${formatDate(session.startDate)} au ${formatDate(session.endDate)}`;
 
   return (
-    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex items-center justify-center">
+    <main className="min-h-screen bg-gray-200 p-8 print:bg-white print:p-0 flex flex-col items-center justify-center">
+      <PrintDownloadButtons filename={`Releve_KAGROM_${enrollment.matricule}.pdf`} />
+      
       {/* Relevé Container: Standard A4 Portrait */}
       <div className="relative mx-auto w-[210mm] h-[297mm] bg-white overflow-hidden shadow-2xl print:shadow-none font-display text-[#112240]">
         

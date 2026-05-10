@@ -8,10 +8,10 @@ import { Role } from "@prisma/client";
 export default async function NotesPage() {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
 
-  const enrollments = await prisma.enrollment.findMany({
-    orderBy: { registrationDate: "desc" },
+  const modules = await prisma.enrollmentModule.findMany({
+    orderBy: { createdAt: "desc" },
     include: {
-      learner: true,
+      enrollment: { include: { learner: true } },
       trainingModule: true,
     },
   });
@@ -27,32 +27,32 @@ export default async function NotesPage() {
       <Panel title="Resultats des Evaluations" description="Enregistrez ou mettez a jour les notes d'un apprenant.">
         <DataTable
           headers={["Matricule", "Nom complet", "Module", "Moyenne", "Mention", "Saisie"]}
-          rows={enrollments.map((enrollment) => [
-            enrollment.matricule,
-            `${enrollment.learner.firstName} ${enrollment.learner.lastName}`,
-            enrollment.trainingModule?.name || "-",
-            enrollment.averageScore ? decimalToNumber(enrollment.averageScore).toFixed(2) : "-",
-            enrollment.resultLabel || enrollment.status,
+          rows={modules.map((module) => [
+            module.enrollment.matricule,
+            `${module.enrollment.learner.firstName} ${module.enrollment.learner.lastName}`,
+            module.trainingModule?.name || "-",
+            module.averageScore ? decimalToNumber(module.averageScore).toFixed(2) : "-",
+            module.resultLabel || module.status,
             <form key="form" action={recordResultAction} className="grid gap-2 md:grid-cols-2">
-              <input type="hidden" name="enrollmentId" value={enrollment.id} />
+              <input type="hidden" name="enrollmentModuleId" value={module.id} />
               <input
                 name="scoreTheory"
                 type="number"
                 step="0.01"
-                defaultValue={enrollment.scoreTheory ? decimalToNumber(enrollment.scoreTheory) : ""}
-                placeholder="Theorique"
-                className="h-10 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
+                defaultValue={module.scoreTheory ? decimalToNumber(module.scoreTheory) : ""}
+                placeholder="Théorique"
+                className="h-10 rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
               />
               <input
                 name="scorePractical"
                 type="number"
                 step="0.01"
-                defaultValue={enrollment.scorePractical ? decimalToNumber(enrollment.scorePractical) : ""}
+                defaultValue={module.scorePractical ? decimalToNumber(module.scorePractical) : ""}
                 placeholder="Pratique"
-                className="h-10 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
+                className="h-10 rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-3"
               />
               <div className="md:col-span-2">
-                <Field label="Observation" name="observation" defaultValue={enrollment.observation || ""} />
+                <Field label="Observation" name="observation" defaultValue={module.observation || ""} />
               </div>
               <div className="md:col-span-2">
                 <SubmitButton label="Enregistrer les Notes" />
