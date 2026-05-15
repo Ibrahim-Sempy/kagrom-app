@@ -25,18 +25,18 @@ export default async function DocumentsPage(props: { searchParams: Promise<{ [ke
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Documents"
         title="Gestion des Documents"
         description="Acces centralise aux factures, recus, certificats, badges et releves de notes."
-      />
+      /> */}
 
       <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Panel title="Selectionner un Apprenant" description="Generez directement les documents utiles a partir d'un dossier apprenant.">
           <DocumentSelect
             options={enrollments.map((enrollment) => ({
               value: enrollment.id,
-              label: `${enrollment.matricule} - ${enrollment.learner.firstName} ${enrollment.learner.lastName}`,
+              label: `${enrollment.learner.registrationNo} - ${enrollment.learner.firstName} ${enrollment.learner.lastName}`,
             }))}
           />
 
@@ -49,7 +49,7 @@ export default async function DocumentsPage(props: { searchParams: Promise<{ [ke
             return (
               <>
                 <div className="mt-6 rounded-md bg-[#b8e7f2] p-5 text-[#0b3850]">
-                  <p><strong>Matricule:</strong> {selectedEnrollment.matricule}</p>
+                  <p><strong>Numéro d'Inscription:</strong> {selectedEnrollment.learner.registrationNo}</p>
                   <p><strong>Nom:</strong> {selectedEnrollment.learner.firstName} {selectedEnrollment.learner.lastName}</p>
                   <p><strong>Module:</strong> {selectedEnrollment.enrollmentModules[0]?.trainingModule?.name || "-"}</p>
                 </div>
@@ -91,7 +91,7 @@ export default async function DocumentsPage(props: { searchParams: Promise<{ [ke
             headers={["Date", "Apprenant", "Type", "Statut", "Actions"]}
             rows={documents.map((document) => [
               formatDate(document.createdAt),
-              document.enrollment ? `${document.enrollment.learner.firstName} ${document.enrollment.learner.lastName}` : document.invoice?.clientName || "-",
+              document.enrollment ? `${document.enrollment.learner.firstName} ${document.enrollment.learner.lastName}` : "-",
               document.type,
               document.status,
               <span key="action" className="text-xs text-[color:var(--foreground-muted)]">Archive</span>,

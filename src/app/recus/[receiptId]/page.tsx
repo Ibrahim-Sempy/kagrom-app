@@ -16,7 +16,13 @@ export default async function ReceiptPrintPage({
     include: {
       payment: {
         include: {
-          invoice: true,
+          invoice: {
+            include: {
+              enrollment: { include: { learner: true } },
+              assignment: { include: { household: true } },
+            },
+          },
+          paymentMode: true,
         },
       },
     },
@@ -27,6 +33,11 @@ export default async function ReceiptPrintPage({
   }
 
   const invoice = receipt.payment.invoice;
+  const recipient = invoice?.enrollment
+    ? `${invoice.enrollment.learner.firstName} ${invoice.enrollment.learner.lastName}`
+    : invoice?.assignment
+      ? `${invoice.assignment.household.firstName} ${invoice.assignment.household.lastName}`
+      : "Paiement direct";
 
   return (
     <main className="min-h-screen bg-[#f1ead8] p-6 print:bg-white flex flex-col items-center">
@@ -45,7 +56,7 @@ export default async function ReceiptPrintPage({
           </div>
           <div className="rounded-[24px] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Client</p>
-            <p className="mt-2 text-xl font-semibold">{invoice?.clientName || "Apprenant KAGROM"}</p>
+            <p className="mt-2 text-xl font-semibold">{recipient}</p>
           </div>
           <div className="rounded-[24px] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Montant recu</p>
@@ -57,11 +68,11 @@ export default async function ReceiptPrintPage({
           </div>
           <div className="rounded-[24px] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Mode</p>
-            <p className="mt-2 text-xl font-semibold">{receipt.payment.method}</p>
+            <p className="mt-2 text-xl font-semibold">{receipt.payment.paymentMode?.label || "Non precise"}</p>
           </div>
           <div className="rounded-[24px] bg-[color:var(--surface-2)] p-5">
             <p className="text-sm text-[color:var(--foreground-muted)]">Reference</p>
-            <p className="mt-2 text-xl font-semibold">{receipt.payment.reference || "Sans reference"}</p>
+            <p className="mt-2 text-xl font-semibold">{receipt.payment.paymentNo}</p>
           </div>
         </div>
       </div>

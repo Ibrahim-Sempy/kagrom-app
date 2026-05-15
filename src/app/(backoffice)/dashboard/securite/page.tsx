@@ -14,11 +14,11 @@ export default async function SecurityPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Configuration"
         title="Utilisateurs & Roles"
         description="Gestion securisee des comptes, des roles et du mot de passe."
-      />
+      /> */}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Creer un utilisateur" description="Provisionnez les acces internes selon les responsabilites.">

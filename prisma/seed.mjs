@@ -293,7 +293,7 @@ async function main() {
       id: "assignment-seed-001",
       employeeId: employee.id,
       householdId: household.id,
-      serviceLabel: "Femme de menage",
+      monthlyAmount: 1500000,
       startDate: new Date("2026-04-25"),
       status: AssignmentStatus.ACTIVE,
     },

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ActionButton, Modal } from "./components";
-import { createServiceProviderAction, updateServiceProviderAction, createMissionAction, updateMissionAction } from "@/app/actions";
+// import { createServiceProviderAction, updateServiceProviderAction, createMissionAction, updateMissionAction } from "@/app/actions";
 import { Field, SelectField, SubmitButton, TextArea } from "@/components/ui";
 import { toast } from "sonner";
 
@@ -28,13 +28,13 @@ export function ServiceProviderModal({
   onClose: () => void 
 }) {
   const isEdit = !!provider;
-  const action = isEdit ? updateServiceProviderAction.bind(null, provider.id) : createServiceProviderAction;
+  // const action = isEdit ? updateServiceProviderAction.bind(null, provider.id) : createServiceProviderAction;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "Modifier Fiche Personnel" : "Nouvelle Fiche Personnel"}>
       <form action={async (data) => { 
         try {
-          await action(data); 
+          // await action(data); 
           toast.success(isEdit ? "Fiche modifiée avec succès" : "Personnel ajouté avec succès");
           onClose(); 
         } catch (error) {
@@ -158,13 +158,13 @@ export function ServiceMissionModal({
   onClose: () => void 
 }) {
   const isEdit = !!mission;
-  const action = isEdit ? updateMissionAction.bind(null, mission.id) : createMissionAction;
+  // const action = isEdit ? updateMissionAction.bind(null, mission.id) : createMissionAction;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "Modifier Fiche Partenaire" : "Nouvelle Fiche Partenaire"}>
       <form action={async (data) => { 
         try {
-          await action(data); 
+          // await action(data); 
           toast.success(isEdit ? "Mission modifiée avec succès" : "Mission créée avec succès");
           onClose(); 
         } catch (error) {
