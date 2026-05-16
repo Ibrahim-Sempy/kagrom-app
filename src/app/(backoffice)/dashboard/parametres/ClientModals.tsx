@@ -20,6 +20,10 @@ import {
   deletePaymentModeOptionAction,
   updatePaymentInstallmentAction,
   deletePaymentInstallmentAction,
+  updateAvailabilityAction,
+  deleteAvailabilityAction,
+  updateServiceAction,
+  deleteServiceAction
 } from "@/app/actions";
 
 // Generic Action Wrapper
@@ -144,4 +148,35 @@ export function InstallmentModal({ item, isOpen, onClose }: any) {
     </Modal>
   );
 }
+
 export const InstallmentActions = (props: any) => <ParamActions {...props} deleteAction={deletePaymentInstallmentAction} ModalComponent={InstallmentModal} />;
+
+// availabitilities ou disponibilités
+
+export function AvailabilityModal({ item, isOpen, onClose }: any) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Modifier la Disponibilité">
+      <form action={async (data) => { try { await updatePaymentInstallmentAction(item.id, data); toast.success("Modifié"); onClose(); } catch (e) { toast.error("Erreur"); } }} className="grid gap-4">
+        <Field label="Libelle" name="label" defaultValue={item.label} required />
+        <div className="flex justify-end"><SubmitButton label="Enregistrer" /></div>
+      </form>
+    </Modal>
+  );
+}
+
+export const AvailabilityActions = (props: any) => <ParamActions {...props} deleteAction={deleteAvailabilityAction} ModalComponent={AvailabilityModal} />;
+
+
+// Services
+export function ServiceModal({ item, isOpen, onClose }: any) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Modifier le Service">
+      <form action={async (data) => { try { await updateServiceAction(item.id, data); toast.success("Modifié"); onClose(); } catch (e) { toast.error("Erreur"); } }} className="grid gap-4">
+        <Field label="Libelle" name="label" defaultValue={item.label} required />
+        <div className="flex justify-end"><SubmitButton label="Enregistrer" /></div>
+      </form>
+    </Modal>
+  );
+}
+
+export const ServiceActions = (props: any) => <ParamActions {...props} deleteAction={deleteServiceAction} ModalComponent={ServiceModal} />;

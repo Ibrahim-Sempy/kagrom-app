@@ -16,11 +16,13 @@
 
 **Disponibilité** (id, Label)
 
+**Service**(id, label, description, status)
+
 **Enrollement** (id, learnerId, registrationDate, PayementModeOptionID, registrationFee, registrationFee, aimountPaid, payementStatus)
 
 **Household** (firstname, lastname, adress, quartier, principalPhone, secondaryPhone, email, profession)
 
-**Employe** (firstname, lastname, birthDate, birthPlace, nationnality, matrialStatus, adress, principalPhone, secondaryPhone, typeOfID, NumberPiece, ExpirationDate, pieceJointe(oui, non), guarantFirstname, guarantLastname, lienParante, guarantAdress, guarantPhone, completFolder(bool), entretienEffect(bool), avis(favorite, surveiller, refuse), observations, Disponibilite[], posteDemande[](ServiceEmploye), Competence[](servoeEmploye))
+**Employe** (firstname, lastname, birthDate, birthPlace, nationnality, matrialStatus, adress, principalPhone, secondaryPhone, typeOfID, NumberPiece, ExpirationDate, pieceJointe(oui, non), guarantFirstname, guarantLastname, lienParante, guarantAdress, guarantPhone, completFolder(bool), entretienEffect(bool), avis(favorite, surveiller, refuse), observations, Disponibilite[], posteDemande[](ServiceEmploye), Competence[](serviceEmploye))
 
 **Assignement** (id, employeId, householdeID, services[], lieu, horairs, startDate, numberPerson, missionDetail, status)
 

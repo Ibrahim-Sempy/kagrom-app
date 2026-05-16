@@ -9,40 +9,51 @@ import { Role } from "@prisma/client";
 export default async function FinancesPage() {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.ACCOUNTANT]);
 
-  const [missions, invoices, payments] = await Promise.all([
-    prisma.serviceMission.findMany({ orderBy: { createdAt: "desc" } }),
+  const [invoices, payments] = await Promise.all([
     prisma.invoice.findMany({
       orderBy: { createdAt: "desc" },
-      include: { payments: true },
+      include: { payments: true, enrollment: {include: {learner: true}}, assignment: { include: { employee: true, household: true } } },
     }),
     prisma.payment.findMany({
       orderBy: { paidAt: "desc" },
-      include: { receipt: true, invoice: true },
+      include: { receipt: true, invoice: true, paymentMode: true },
     }),
   ]);
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Facturation et comptabilite simplifiee"
         title="Factures, paiements et recus"
         description="Suivi des entrees financieres, historique des transactions et impression immediate des recus."
-      />
+      /> */}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Nouvelle facture" description="Facturation d'une mission de prestation ou d'un besoin ponctuel.">
           <form action={createInvoiceAction} className="grid gap-4 md:grid-cols-2">
-            <Field label="Client" name="clientName" required />
+            <SelectField
+              label="Type de facture"
+              name="type"
+              required
+              options={[
+                { value: "client", label: "Client (Foyer)" },
+                { value: "learner", label: "Apprenant" },
+              ]}
+            />
+            <SelectField
+              label="Enrollment/Assignment"
+              name="enrollmentId"
+              options={[
+                ...invoices
+                  .filter((inv) => inv.enrollmentId)
+                  .map((inv) => ({
+                    value: inv.enrollmentId || "",
+                    label: `Inscription - ${inv.enrollment?.learner?.firstName} ${inv.enrollment?.learner?.lastName}`,
+                  })),
+              ]}
+            />
             <Field label="Montant" name="amount" type="number" required />
             <Field label="Echeance" name="dueDate" type="date" required />
-            <SelectField
-              label="Mission liee"
-              name="missionId"
-              options={missions.map((mission) => ({
-                value: mission.id,
-                label: `${mission.missionNo} - ${mission.clientName}`,
-              }))}
-            />
             <div className="md:col-span-2">
               <TextArea label="Description" name="description" />
             </div>
@@ -60,25 +71,22 @@ export default async function FinancesPage() {
               required
               options={invoices.map((invoice) => ({
                 value: invoice.id,
-                label: `${invoice.invoiceNo} - ${invoice.clientName}`,
+                label: `${invoice.invoiceNo} - ${formatCurrency(decimalToNumber(invoice.ammount))}`,
               }))}
             />
             <Field label="Montant paye" name="amount" type="number" required />
             <Field label="Date de paiement" name="paidAt" type="date" required />
             <SelectField
               label="Mode de paiement"
-              name="method"
+              name="paymentModeId"
               required
               options={[
-                { value: "CASH", label: "Especes" },
-                { value: "MOBILE_MONEY", label: "Mobile Money" },
-                { value: "BANK_TRANSFER", label: "Virement bancaire" },
-                { value: "CARD", label: "Carte" },
+                { value: "cash", label: "Especes" },
+                { value: "mobile_money", label: "Mobile Money" },
+                { value: "bank_transfer", label: "Virement bancaire" },
+                { value: "card", label: "Carte" },
               ]}
             />
-            <div className="md:col-span-2">
-              <Field label="Reference" name="reference" />
-            </div>
             <div className="md:col-span-2">
               <SubmitButton label="Valider le paiement" />
             </div>
@@ -89,20 +97,21 @@ export default async function FinancesPage() {
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Panel title="Factures emises" description="Etat des factures et progression d'encaissement.">
           <DataTable
-            headers={["Facture", "Description", "Montant", "Encaisse", "Statut"]}
+            headers={["Facture", "Type", "Montant", "Encaisse", "Statut"]}
             rows={invoices.map((invoice) => {
               const paid = invoice.payments.reduce((sum, payment) => sum + decimalToNumber(payment.amount), 0);
+              const recipient =
+                invoice.type === "learner"
+                  ? `${invoice.enrollment?.learner?.firstName} ${invoice.enrollment?.learner?.lastName}`
+                  : `${invoice.assignment?.household?.firstName} ${invoice.assignment?.household?.lastName}`;
 
               return [
                 <div key="invoice">
                   <p className="font-semibold">{invoice.invoiceNo}</p>
-                  <p className="text-xs text-[color:var(--foreground-muted)]">{invoice.clientName}</p>
+                  <p className="text-xs text-[color:var(--foreground-muted)]">{recipient}</p>
                 </div>,
-                <div key="description">
-                  <p>{invoice.description}</p>
-                  <p className="text-xs text-[color:var(--foreground-muted)]">{formatDate(invoice.dueDate)}</p>
-                </div>,
-                formatCurrency(decimalToNumber(invoice.amount)),
+                invoice.type === "learner" ? "Apprenant" : "Client",
+                formatCurrency(decimalToNumber(invoice.ammount)),
                 formatCurrency(paid),
                 invoice.status,
               ];
@@ -120,7 +129,7 @@ export default async function FinancesPage() {
               </div>,
               payment.invoice?.invoiceNo || "-",
               formatCurrency(decimalToNumber(payment.amount)),
-              payment.method,
+              payment.paymentMode?.label || "-",
               payment.receipt ? (
                 <Link href={`/recus/${payment.receipt.id}`} className="inline-flex rounded-full bg-[color:var(--brand-gold)] px-3 py-2 text-xs font-semibold text-white">
                   Imprimer

@@ -14,10 +14,8 @@ export default async function CertificatesPage() {
       enrollment: {
         include: {
           learner: true,
-          trainingSession: {
-            include: { training: true },
-          },
-          enrollmentModules: true,
+          Session: true,
+          notes: true,
         },
       },
     },
@@ -25,20 +23,21 @@ export default async function CertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Certificats et verification"
         title="Authenticite, QR Code et impression"
         description="Tous les certificats valides sont accessibles ici avec verification publique et impression au format KAGROM."
-      />
+      /> */}
 
       <Panel title="Registre des certificats" description="Emission automatique apres validation des resultats.">
         <DataTable
-          headers={["Certificat", "Apprenant", "Formation", "Resultat", "Actions"]}
+          headers={["Certificat", "Apprenant", "Session", "Score Moyen", "Actions"]}
           rows={certificates.map((certificate) => {
-            const modules = certificate.enrollment.enrollmentModules || [];
-            const totalScore = modules.reduce((sum, m) => sum + (m.averageScore ? Number(m.averageScore) : 0), 0);
-            const formattedScore = modules.length > 0 ? totalScore / modules.length : 12;
-            
+            const notes = certificate.enrollment.notes || [];
+            const averageScore = notes.length > 0
+              ? notes.reduce((sum, n) => sum + (Number(n.scoreTheory) + Number(n.scorePractical)) / 2, 0) / notes.length
+              : 0;
+
             return [
               <div key="certificate">
                 <p className="font-semibold">{certificate.certificateNo}</p>
@@ -48,13 +47,13 @@ export default async function CertificatesPage() {
                 <p>
                   {certificate.enrollment.learner.firstName} {certificate.enrollment.learner.lastName}
                 </p>
-                <p className="text-xs text-[color:var(--foreground-muted)]">{certificate.enrollment.matricule}</p>
+                <p className="text-xs text-[color:var(--foreground-muted)]">{certificate.enrollment.learner.registrationNo}</p>
               </div>,
-              <div key="training">
-                <p>{certificate.enrollment.trainingSession.training.title}</p>
-                <p className="text-xs text-[color:var(--foreground-muted)]">{certificate.enrollment.trainingSession.name}</p>
-              </div>,
-              `${formattedScore.toFixed(2)} / 20`,
+              // <div key="session">
+              //   <p>{certificate.enrollment.Session?.label || "Session"}</p>
+              //   <p className="text-xs text-[color:var(--foreground-muted)]">{formatDate(certificate.enrollment.Session?.startDate)}</p>
+              // </div>,
+              `${averageScore.toFixed(2)} / 20`,
               <div key="actions" className="flex flex-wrap gap-2">
                 <Link href={`/certificats/${certificate.id}`} className="rounded-md bg-[color:var(--brand-green)] px-3 py-2 text-xs font-semibold text-white">
                   Imprimer
@@ -69,6 +68,7 @@ export default async function CertificatesPage() {
             ];
           })}
         />
+        
       </Panel>
     </div>
   );

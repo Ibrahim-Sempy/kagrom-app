@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ServiceMissionModal, ServiceProviderModal, PrintMissionButton, PrintPersonnelButton } from "./ClientModals";
 import { ActionButton } from "./components";
 import { EditActionButton, DeleteActionButton } from "@/components/TableActions";
-import { deleteServiceProviderAction, deleteMissionAction } from "@/app/actions";
+// import { deleteServiceProviderAction, deleteMissionAction } from "@/app/actions";
 import { DataTable, Panel } from "@/components/ui";
 import { formatCurrency, formatDate, decimalToNumber } from "@/lib/utils";
 
@@ -74,7 +74,7 @@ export function PrestationsClientManager({ providers, missions, learners }: { pr
               </div>,
               <div key="actions" className="flex items-center gap-2">
                 <EditActionButton onClick={() => openProviderModal(provider)} />
-                <DeleteActionButton action={deleteServiceProviderAction} id={provider.id} />
+                {/* <DeleteActionButton action={deleteServiceProviderAction} id={provider.id} /> */}
                 <PrintPersonnelButton providerId={provider.id} />
               </div>
             ])}
@@ -104,7 +104,7 @@ export function PrestationsClientManager({ providers, missions, learners }: { pr
                 </div>,
                 <div key="actions" className="flex items-center gap-2">
                   <EditActionButton onClick={() => openMissionModal(mission)} />
-                  <DeleteActionButton action={deleteMissionAction} id={mission.id} />
+                  {/* <DeleteActionButton action={deleteMissionAction} id={mission.id} /> */}
                   <PrintMissionButton missionId={mission.id} />
                 </div>
               ];

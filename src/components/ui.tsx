@@ -51,20 +51,36 @@ export function StatCard({
 export function Panel({
   title,
   description,
+  actions,
   children,
   className,
 }: {
   title: string;
   description?: string;
-  children: ReactNode;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section className={cn("rounded-md border border-[color:var(--stroke)] bg-white p-6 shadow-[0_20px_50px_rgba(56,91,42,0.06)]", className)}>
-      <div className="mb-5">
-        <h2 className="font-display text-2xl font-semibold text-[color:var(--foreground)]">{title}</h2>
-        {description ? <p className="mt-2 text-sm leading-7 text-[color:var(--foreground-muted)]">{description}</p> : null}
+      
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        
+        <div>
+          <h2 className="font-display text-2xl font-semibold text-[color:var(--foreground)]">
+            {title}
+          </h2>
+
+          {description && (
+            <p className="mt-2 text-sm leading-7 text-[color:var(--foreground-muted)]">
+              {description}
+            </p>
+          )}
+        </div>
+
+        {actions}
       </div>
+
       {children}
     </section>
   );
@@ -97,7 +113,7 @@ export function Field({
         defaultValue={defaultValue}
         required={required}
         accept={accept}
-        className="h-12 w-full rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-4 text-sm text-[color:var(--foreground)] outline-none transition focus:border-[color:var(--brand-gold)] focus:bg-white"
+        className="h-12 w-full rounded-md border border-[color:var(--stroke)]  px-4 text-sm text-[color:var(--foreground)] outline-none transition focus:border-[color:var(--brand-gold)] focus:bg-white"
       />
     </label>
   );
@@ -123,7 +139,7 @@ export function SelectField({
         name={name}
         required={required}
         defaultValue={defaultValue}
-        className="h-12 w-full rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-2)] px-4 text-sm text-[color:var(--foreground)] outline-none transition focus:border-[color:var(--brand-gold)] focus:bg-white"
+        className="h-12 w-full rounded-md border border-[color:var(--stroke)]  px-4 text-sm text-[color:var(--foreground)] outline-none transition focus:border-[color:var(--brand-gold)] focus:bg-white"
       >
         <option value="">Sélectionner</option>
         {options.map((option) => (

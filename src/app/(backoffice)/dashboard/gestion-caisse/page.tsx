@@ -21,11 +21,11 @@ export default async function CashPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Formation"
         title="Gestion Caisse"
         description="Suivi des operations de caisse, recettes, depenses, solde et justification."
-      />
+      /> */}
 
       <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <Panel title="Nouvelle Operation" description="Saisie manuelle d'une recette ou d'une depense de caisse.">
@@ -50,13 +50,12 @@ export default async function CashPage() {
         <div className="space-y-6">
           <Panel title="Operations de Caisse" description="Historique des mouvements financiers et impact sur le solde.">
             <DataTable
-              headers={["Date", "Libelle", "Type", "Montant", "Solde", "Justification"]}
+              headers={["Date", "Libelle", "Type", "Montant", "Justification"]}
               rows={entries.map((entry) => [
                 formatDate(entry.date),
                 entry.label,
                 entry.type === "INCOME" ? "Recette" : "Depense",
                 formatCurrency(decimalToNumber(entry.amount)),
-                formatCurrency(decimalToNumber(entry.balanceAfter)),
                 entry.justification || "-",
               ])}
             />

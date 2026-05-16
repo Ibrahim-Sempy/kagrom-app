@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createTrainingAction, createTrainingSessionAction, enrollLearnerAction, recordResultAction } from "@/app/actions";
-import { TrainingActions, EnrollmentActions } from "./ClientModals";
+import { createTrainingSessionAction, enrollLearnerAction, recordResultAction } from "@/app/actions";
+import { EnrollmentActions } from "./ClientModals";
 import { DataTable, Field, PageHeader, Panel, SelectField, SubmitButton, TextArea } from "@/components/ui";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,25 +10,21 @@ import { Role } from "@prisma/client";
 export default async function TrainingsPage() {
   await requireRole([Role.ADMIN, Role.MANAGER, Role.TRAINER]);
 
-  const [trainings, sessions, learners, enrollments, operatorTypes, modules, locations, durations, paymentModes] = await Promise.all([
-    prisma.training.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.trainingSession.findMany({
+  const [sessions, learners, enrollments, modules, locations, durations, paymentModes] = await Promise.all([
+    prisma.session.findMany({
       orderBy: { startDate: "desc" },
-      include: { training: true },
     }),
     prisma.learner.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.enrollment.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         learner: true,
-        trainingSession: {
-          include: { training: true },
-        },
+        Session: true,
         certificate: true,
-        enrollmentModules: true,
+        enrollmentModules: { include: { trainingModule: true } },
+        notes: true,
       },
     }),
-    prisma.operatorType.findMany({ orderBy: { name: "asc" } }),
     prisma.trainingModule.findMany({ orderBy: { name: "asc" } }),
     prisma.trainingLocation.findMany({ orderBy: { name: "asc" } }),
     prisma.durationOption.findMany({ orderBy: { label: "asc" } }),
@@ -37,52 +33,25 @@ export default async function TrainingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="Gestion des formations"
         title="Catalogue, sessions, inscriptions et notation"
         description="Creez vos formations, ouvrez des sessions, inscrivez les apprenants et calculez automatiquement les resultats."
-      />
+      /> */}
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Nouvelle formation" description="Structure tarifaire et informations pedagogiques.">
-          <form action={createTrainingAction} className="grid gap-4 md:grid-cols-2">
-            <Field label="Titre" name="title" required />
-            <Field label="Categorie" name="category" required />
-            <Field label="Duree (jours)" name="durationDays" type="number" required />
-            <Field label="Tarif" name="fee" type="number" required />
-            <div className="md:col-span-2">
-              <TextArea label="Description" name="description" />
-            </div>
-            <div className="md:col-span-2">
-              <SubmitButton label="Creer la formation" />
-            </div>
-          </form>
-        </Panel>
-
-        <Panel title="Nouvelle session" description="Planifiez une promotion et rattachez-la a une formation existante.">
+        <Panel title="Nouvelle session" description="Planifiez une session de formation.">
           <form action={createTrainingSessionAction} className="grid gap-4 md:grid-cols-2">
             <Field label="Nom de session" name="name" required />
-            <Field label="Numero de session" name="sessionNumber" type="number" required />
-            <SelectField
-              label="Formation"
-              name="trainingId"
-              required
-              options={trainings.map((training) => ({ value: training.id, label: training.title }))}
-            />
-            <Field label="Lieu" name="location" />
             <Field label="Date de debut" name="startDate" type="date" required />
             <Field label="Date de fin" name="endDate" type="date" required />
-            <div className="md:col-span-2">
-              <Field label="Formateur" name="trainerName" />
-            </div>
+            <Field label="Formateur" name="trainerName" />
             <div className="md:col-span-2">
               <SubmitButton label="Ouvrir la session" />
             </div>
           </form>
         </Panel>
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title="Inscrire un apprenant" description="Affectation d'un apprenant a une session de formation.">
           <form action={enrollLearnerAction} className="grid gap-4">
             <SelectField
@@ -96,79 +65,78 @@ export default async function TrainingsPage() {
             />
             <SelectField
               label="Session"
-              name="trainingSessionId"
+              name="sessionId"
               required
               options={sessions.map((session) => ({
                 value: session.id,
-                label: `${session.training.title} - ${session.name}`,
+                label: `${session.label}`,
+              }))}
+            />
+            <SelectField
+              label="Modules de formation"
+              name="trainingModuleIds"
+              options={modules.map((mod) => ({
+                value: mod.id,
+                label: mod.name,
               }))}
             />
             <SubmitButton label="Inscrire l'apprenant" />
           </form>
-
-          <div className="mt-6 rounded-[24px] border border-[color:var(--stroke)] bg-[color:var(--surface-2)] p-4">
-            <p className="text-sm font-semibold text-[color:var(--brand-green)]">Catalogue actuel</p>
-            <div className="mt-3 space-y-3">
-              {trainings.map((training) => (
-                <div key={training.id} className="rounded-2xl bg-white px-4 py-3">
-                  <p className="font-semibold">{training.title}</p>
-                  <p className="text-sm text-[color:var(--foreground-muted)]">
-                    {training.durationDays} jours • {formatCurrency(decimalToNumber(training.fee))}
-                  </p>
-                  <TrainingActions training={serializeData(training)} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </Panel>
-
-        <Panel title="Suivi des participants" description="Enregistrez les notes et editez certificats et badges.">
-          <DataTable
-            headers={["Apprenant", "Session", "Moyenne", "Statut", "Actions"]}
-            rows={enrollments.map((enrollment) => [
-              <div key="learner">
-                <p className="font-semibold">
-                  {enrollment.learner.firstName} {enrollment.learner.lastName}
-                </p>
-                <p className="text-xs text-[color:var(--foreground-muted)]">Matricule: {enrollment.matricule}</p>
-              </div>,
-              <div key="session">
-                <p>{enrollment.trainingSession.training.title}</p>
-                <p className="text-xs text-[color:var(--foreground-muted)]">
-                  {enrollment.trainingSession.name} • {formatDate(enrollment.trainingSession.startDate)}
-                </p>
-              </div>,
-              (enrollment.enrollmentModules || []).length > 0 ? ((enrollment.enrollmentModules || []).reduce((sum, m) => sum + (m.averageScore ? Number(m.averageScore) : 0), 0) / (enrollment.enrollmentModules || []).length).toFixed(2) : "-",
-              enrollment.status,
-              <div key="actions" className="space-y-3">
-
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/badges/${enrollment.id}`} className="rounded-full border border-[color:var(--stroke)] px-3 py-2 text-xs font-semibold">
-                    Badge
-                  </Link>
-                  <Link href={`/releves/${enrollment.id}`} className="rounded-full border border-[color:var(--stroke)] px-3 py-2 text-xs font-semibold hover:bg-gray-50">
-                    Relevé de notes
-                  </Link>
-                  {enrollment.certificate ? (
-                    <Link href={`/certificats/${enrollment.certificate.id}`} className="rounded-full bg-[color:var(--brand-gold)] px-3 py-2 text-xs font-semibold text-white">
-                      Certificat
-                    </Link>
-                  ) : null}
-                </div>
-                <EnrollmentActions 
-                  enrollment={serializeData(enrollment)} 
-                  sessions={serializeData(sessions)} 
-                  operatorTypes={serializeData(operatorTypes)} 
-                  modules={serializeData(modules)} 
-                  locations={serializeData(locations)} 
-                  durations={serializeData(durations)} 
-                  paymentModes={serializeData(paymentModes)} 
-                />
-              </div>,
-            ])}
-          />
         </Panel>
       </div>
-    </div>
+
+        {/* <Panel title="Suivi des participants" description="Enregistrez les notes et editez certificats et badges.">
+          <DataTable
+            headers={["Apprenant", "Session", "Moyenne", "Statut", "Actions"]}
+            rows={enrollments.map((enrollment) => {
+              const notes = enrollment.notes || [];
+              const averageScore = notes.length > 0
+                ? notes.reduce((sum, n) => sum + (Number(n.scoreTheory || 0) + Number(n.scorePractical || 0)) / 2, 0) / notes.length
+                : 0;
+
+              return [
+                <div key="learner">
+                  <p className="font-semibold">
+                    {enrollment.learner.firstName} {enrollment.learner.lastName}
+                  </p>
+                  <p className="text-xs text-[color:var(--foreground-muted)]">Reg: {enrollment.learner.registrationNo}</p>
+                </div>,
+                <div key="session">
+                  <p>{enrollment.Session?.label || "Session"}</p>
+                  <p className="text-xs text-[color:var(--foreground-muted)]">
+                    {formatDate(enrollment.Session?.startDate || enrollment.createdAt)}
+                  </p>
+                </div>,
+                averageScore > 0 ? averageScore.toFixed(2) : "-",
+                enrollment.status,
+                <div key="actions" className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/badges/${enrollment.id}`} className="rounded-full border border-[color:var(--stroke)] px-3 py-2 text-xs font-semibold">
+                      Badge
+                    </Link>
+                    <Link href={`/releves/${enrollment.id}`} className="rounded-full border border-[color:var(--stroke)] px-3 py-2 text-xs font-semibold hover:bg-gray-50">
+                      Relevé de notes
+                    </Link>
+                    {enrollment.certificate ? (
+                      <Link href={`/certificats/${enrollment.certificate.id}`} className="rounded-full bg-[color:var(--brand-gold)] px-3 py-2 text-xs font-semibold text-white">
+                        Certificat
+                      </Link>
+                    ) : null}
+                  </div>
+                  <EnrollmentActions
+                    enrollment={serializeData(enrollment)}
+                    sessions={serializeData(sessions)}
+                    modules={serializeData(modules)}
+                    locations={serializeData(locations)}
+                    durations={serializeData(durations)}
+                    paymentModes={serializeData(paymentModes)}
+                  />
+                </div>,
+              ];
+            })}
+          />
+        </Panel> */}
+      </div>
+   
   );
 }

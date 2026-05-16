@@ -29,11 +29,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      {/* <PageHeader
         eyebrow="KAGROM SARLU"
         title="Dashboard"
         description="Vue globale des inscriptions, paiements, certifications et activites de l'application mise a jour."
-      />
+      /> */}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Apprenants" value={learners.toString()} />
